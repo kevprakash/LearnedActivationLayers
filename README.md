@@ -4,7 +4,7 @@ Experimental Keras layers for self-learning, self-tuning, and/or approximating a
 
 Testing is done on several variations of a convolutional model on the CIFAR-10 dataset. Optimizer is RMSProp and loss is sparse categorical cross entropy
 
-Current experimental results:
+## Current experimental results:
 
 Tuning Existing Activation Functions with Linear Transformations: A<sub>p<sub>0</sub>, p<sub>1</sub>, p<sub>2</sub>, p<sub>3</sub></sub>(x) = p<sub>0</sub> f(p<sub>1</sub>x + p<sub>2</sub>) + p<sub>3</sub> where f(x) is a standard activation function (ReLu, sigmoid, tanh, etc)
 - Always converges when using standard activation functions
