@@ -4,40 +4,42 @@ import tensorflow as tf
 
 def controlModel(inputShape, c, d, h, outputLength, act=keras.activations.relu):
     input = keras.layers.Input(shape=inputShape)
+    initializer = keras.initializers.RandomNormal(mean=0, stddev=0.005)
     x = input
     for _ in range(0, c[0]):
         for _ in range(0, c[1]):
-            x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=act)(x)
-        x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=act)(x)
+            x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=act, kernel_initializer=initializer)(x)
+        x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=act, kernel_initializer=initializer)(x)
     x = keras.layers.Flatten()(x)
     for _ in range(0, d):
-        x = keras.layers.Dense(units=h, activation=act)(x)
-    output = keras.layers.Dense(units=outputLength, activation=keras.activations.softmax)(x)
+        x = keras.layers.Dense(units=h, activation=act, kernel_initializer=initializer)(x)
+    output = keras.layers.Dense(units=outputLength, activation=keras.activations.softmax, kernel_initializer=initializer)(x)
 
     model = keras.Model(inputs=[input], outputs=[output])
-    model.compile(optimizer=keras.optimizers.RMSprop(lr=0.0002), loss=keras.losses.sparse_categorical_crossentropy, metrics=['accuracy'])
+    model.compile(optimizer=keras.optimizers.SGD(lr=0.0001), loss=keras.losses.sparse_categorical_crossentropy, metrics=['accuracy'])
 
     return model
 
 
 def tuningModel(inputShape, c, d, h, outputLength, act=keras.activations.relu):
     input = keras.layers.Input(shape=inputShape)
+    initializer = keras.initializers.RandomNormal(mean=0, stddev=0.005)
     x = input
     for _ in range(0, c[0]):
         for _ in range(0, c[1]):
-            x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
+            x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(1, 1), padding='same', kernel_initializer=initializer, activation=None)(x)
             x = LAL.TuningActivationLayer(activationFunction=act)(x)
-        x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=None)(x)
+        x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(2, 2), padding='same', kernel_initializer=initializer, activation=None)(x)
         x = LAL.TuningActivationLayer(activationFunction=act)(x)
     x = keras.layers.Flatten()(x)
     for _ in range(0, d):
-        x = keras.layers.Dense(units=h, activation=None)(x)
+        x = keras.layers.Dense(units=h, activation=None, kernel_initializer=initializer)(x)
         x = LAL.TuningActivationLayer(activationFunction=act)(x)
-    x = keras.layers.Dense(units=outputLength, activation=None)(x)
-    x = LAL.TuningActivationLayer(activationFunction=keras.activations.softmax)(x)
+    x = keras.layers.Dense(units=outputLength, activation=None, kernel_initializer=initializer)(x)
+    output = LAL.TuningActivationLayer(activationFunction=keras.activations.softmax)(x)
 
-    model = keras.Model(inputs=[input], outputs=[x])
-    model.compile(optimizer=keras.optimizers.RMSprop(lr=0.0002), loss=keras.losses.sparse_categorical_crossentropy,
+    model = keras.Model(inputs=[input], outputs=[output])
+    model.compile(optimizer=keras.optimizers.SGD(lr=0.0001), loss=keras.losses.sparse_categorical_crossentropy,
                   metrics=['accuracy'])
 
     return model
@@ -45,21 +47,22 @@ def tuningModel(inputShape, c, d, h, outputLength, act=keras.activations.relu):
 
 def learningModel(inputShape, c, d, h, outputLength, N, activationLayer):
     input = keras.layers.Input(shape=inputShape)
+    initializer = keras.initializers.RandomNormal(mean=0, stddev=0.005)
     x = input
     for _ in range(0, c[0]):
         for _ in range(0, c[1]):
-            x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(1, 1), padding='same', activation=None)(x)
+            x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(1, 1), padding='same', kernel_initializer=initializer, activation=None)(x)
             x = activationLayer(N)(x)
-        x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(2, 2), padding='same', activation=None)(x)
+        x = keras.layers.Conv2D(filters=h, kernel_size=(3, 3), strides=(2, 2), padding='same', kernel_initializer=initializer, activation=None)(x)
         x = activationLayer(N)(x)
     x = keras.layers.Flatten()(x)
     for _ in range(0, d):
-        x = keras.layers.Dense(units=h, activation=None)(x)
+        x = keras.layers.Dense(units=h, kernel_initializer=initializer, activation=None)(x)
         x = activationLayer(N)(x)
-    x = keras.layers.Dense(units=outputLength, activation=keras.activations.softmax)(x)
+    output = keras.layers.Dense(units=outputLength, kernel_initializer=initializer, activation=keras.activations.softmax)(x)
 
-    model = keras.Model(inputs=[input], outputs=[x])
-    model.compile(optimizer=keras.optimizers.RMSprop(lr=0.0002), loss=keras.losses.sparse_categorical_crossentropy,
+    model = keras.Model(inputs=[input], outputs=[output])
+    model.compile(optimizer=keras.optimizers.SGD(lr=0.0001), loss=keras.losses.sparse_categorical_crossentropy,
                   metrics=['accuracy'])
 
     return model
@@ -94,12 +97,12 @@ def modelTester(c, d, h, N, learnedLayer, act=keras.activations.relu):
 test_results = []
 for _c in range(1, 4):
     res_c = []
-    for _c2 in range(1, 4):
+    for _c2 in range(0, 4):
         res_c2 = []
         for _d in range(1, 4):
             res_d = []
-            for _h in range(5, 8):
-                res_d.append(modelTester((_c, _c2), _d, 2**_h, 6, LAL.LearnedExponentialActivationLayer, keras.activations.relu))
+            for _h in range(4, 7):
+                res_d.append(modelTester((_c, _c2), _d, 2**_h, 4, LAL.LearnedFourierActivationLayer, keras.activations.relu))
             res_c2.append(res_d)
         res_c.append(res_c2)
     test_results.append(res_c)
